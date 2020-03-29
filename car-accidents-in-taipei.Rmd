@@ -1,0 +1,227 @@
+---
+title: "Business Analytics Project: Car Accidents in Taipei"
+author: "Nancy Lin"
+date: "2/28/2020"
+output: html_document
+---
+
+```{r}
+library(readxl)
+library(tidyverse)
+library(ggplot2)
+```
+
+```{r}
+# t101 <- read_csv("101a1a2.csv", locale = locale(encoding = 'BIG5'))
+# t101 %>%
+#   mutate(肇事地點=iconv(肇事地點, from = "BIG5", to = "UTF-8"))
+t101 <- read.table("101a1a2.csv", header=TRUE,sep = ",", fileEncoding = "BIG5")
+t102 <- read.table("102a1a2.csv", header=TRUE,sep = ",", fileEncoding = "BIG5")
+t103 <- read.table("103a1a2.csv", header=TRUE,sep = ",", fileEncoding = "BIG5")
+# t104 <- read.table("104a1a2.csv", header=TRUE,sep = ",", fileEncoding = "BIG5")
+t105 <- read.table("105a1a2.csv", header=TRUE,sep = ",", fileEncoding = "BIG5")
+t106 <- read.table("106a1a2.csv", header=TRUE,sep = ",", fileEncoding = "BIG5")
+
+# t101 <- na.omit(t101)
+# t102 <- na.omit(t102)
+# t103 <- na.omit(t103)
+# t104 <- na.omit(t104)
+# t105 <- na.omit(t105)
+# t106 <- na.omit(t106)
+
+t <-rbind(t101, t102, t103, t105, t106)
+#t <-rbind(t101, t102, t103, t104, t105, t106)
+```
+
+# Data Cleaning
+
+```{r}
+t <- t %>%
+  rename(
+    year = 發生年,
+    month = 發生月,
+    mday = 發生日,
+    hour = 發生時,
+    minute = 發生分,
+    die24hr = 處理別,
+    district = 區序,
+    address = 肇事地點,
+    dead = 死亡人數,
+    injured = 受傷人數,
+    perp = 當事人序,
+    cartype = 車種,
+    gender = 性別,
+    age = 年齡,
+    injuredstatus = 受傷程度,
+    weather = 天候,
+    speedlimit = 速限,
+    roadtype = 道路型態,
+    location = 事故位置
+    )
+```
+
+```{r}
+t$year[t$year==101] <- 2012
+t$year[t$year==102] <- 2013
+t$year[t$year==103] <- 2014
+t$year[t$year==104] <- 2015
+t$year[t$year==105] <- 2016
+t$year[t$year==106] <- 2017
+t$speedlimit[t$speedlimit==440] <- 40
+t$speedlimit[t$speedlimit==1] <- 10
+t$speedlimit[t$speedlimit==2] <- 20
+t$speedlimit[t$speedlimit==3] <- 30
+t$speedlimit[t$speedlimit==4] <- 40
+t$speedlimit[t$speedlimit==5] <- 50
+t$speedlimit[t$speedlimit==58] <- 60
+t$speedlimit[t$speedlimit<=29 & t$speedlimit>0] <- 40
+t$speedlimit[t$speedlimit==0] <- 200
+t$age[t$age>=200 | t$age<0] <- NA
+t <- na.omit(t)
+```
+
+```{r}
+t <- t %>%
+   mutate(agesec = case_when(age>=0 & age<12 ~ "0-11", 
+                             age>=12 & age<18 ~ "12-17",
+                             age>=18 & age<22 ~ "18-21",
+                             age>=22 & age<30 ~ "22-29",
+                             age>=30 & age<40 ~ "30-39",
+                             age>=40 & age<50 ~ "40-49",
+                             age>=50 & age<60 ~ "50-59",
+                             age>=60 & age<70 ~ "60-69",
+                             age>=70 & age<80 ~ "70-79",
+                             age>=80 & age<90 ~ "80-89",
+                             age>=90 & age<100 ~ "90-99",
+                             age>=100 ~ "100-"))
+```
+
+```{r}
+cfactor <- c("year", "month", "mday", "hour", "minute", "die24hr", "dead", "injured", "perp", "cartype", "gender", "injuredstatus", "weather", "speedlimit", "roadtype", "location", "agesec")
+t[cfactor] <- lapply(t[cfactor], as.factor)
+summary(t)
+```
+
+# EDA
+
+```{r}
+p <- ggplot(data = t)
+```
+
+```{r}
+p + geom_bar(aes(x = year))
+```
+The number of traffic accidents in Taipei slightly increases from 2012 to 2017.
+```{r}
+p + geom_bar(aes(x = month))
+```
+The number of traffic accidents in Taipei is quite average each month. 
+In December occur more accidents, which might result from the crazy traffic during Christmas and New Year's Eve in Taipei for celebration.
+In February occur less accidents, which might result from the Lunar New Year Holidays, when most of the people living or working in Taipei have to go back to their hometown in other places in Taiwan, leaving Taipei a nearly empty town.
+```{r}
+p + geom_bar(aes(x = mday))
+```
+Nothing special regarding each day of the month. 31st occurs less accidents simply because only 5 months have the 31st.
+```{r}
+p + geom_bar(aes(x = hour))
+```
+Traffic accidents happen the most at 8 a.m. and 6 p.m., which might result from the rush hour for commuting to and from work.
+Traffic accidents happen the least from 12 a.m. to 6 a.m, when most of people are sleeping.
+```{r}
+p + geom_bar(aes(x = die24hr))
+```
+```{r}
+p + geom_bar(aes(x = die24hr, y = stat(prop), group = 1))
+```
+Most of the traffic accidents do not cause people die within 24 hours.
+```{r}
+p + geom_bar(aes(x = district))
+```
+Highest
+1st: 03中山區 The commercial area and the center of Taipei.
+2nd: 09北投區 An inner suburb of Taipei with a wide area of montains.
+
+Lowest
+1st: 11南港區 The industrial area of Taipei with small numbers of residents.
+2nd: 02萬華區 The old prosperous area of Taipei.
+```{r}
+p + geom_bar(aes(x = dead)) + xlab("Dead counts")
+```
+Most of the traffic accidents do not cause any death.
+```{r}
+p + geom_bar(aes(x = dead, y = stat(prop), group = 1)) + xlab("Dead counts")
+```
+Most of the traffic accidents do not cause any death.
+```{r}
+p + geom_bar(aes(x = injured)) + xlab("Injured counts")
+```
+```{r}
+p + geom_bar(aes(x = injured, y = stat(prop), group = 1)) + xlab("Injured counts")
+```
+More than 60% of the accidents have only 1 person injured.
+```{r}
+p + geom_bar(aes(x = perp))
+```
+```{r}
+p + geom_bar(aes(x = cartype, y = stat(prop), group = 1))
+```
+
+1st: C03 Scooter
+2nd: B03 Private small car
+3rd: H02 Passenger
+4th: B01 Taxi
+5th: H01 Pedestrian
+
+```{r}
+p + geom_bar(aes(x = gender, y = stat(prop), group = 1))
+```
+Apparently male encounters traffic accidents twice more than female.
+```{r}
+p + geom_bar(aes(x = age))
+```
+```{r}
+p + geom_bar(aes(x = agesec))
+```
+People under 18 are illegal to drive, so people under 18 are less likely to get into traffic accidents.
+```{r}
+p + geom_bar(aes(x = injuredstatus))
+```
+1: died within 24 hr
+2: injured
+3: safe & sound
+4: unknown
+5: die within 2-30 days
+```{r}
+p + geom_bar(aes(x = weather))
+```
+1-5: Rare weather condition in Taiwan such as storm or snow
+6: Rainy
+7: Cloudy
+8: Sunny - Taiwan has a subtropical climate.
+```{r}
+p + geom_bar(aes(x = speedlimit))
+```
+Note that we set speedlimit to 200 for locations that do not have any speed limitation.
+```{r}
+p + geom_bar(aes(x = roadtype))
+```
+3: 3-way intersection
+4: 4-way intersection
+14: straight road
+```{r}
+p + geom_bar(aes(x = location))
+```
+1: inside the intersection
+2: near the intersection
+7: fast lane
+8: slow lane
+9: general road without specifying fast lane and slow lane
+```{r}
+mosaicplot(table(t$agesec, t$injuredstatus), color = TRUE, main = "How age affects the injured status", xlab = "Age Section", ylab = "Injured Status")
+```
+2: Injured
+3: Safe & sound
+```{r}
+mosaicplot(table(t$gender, t$injuredstatus), color = TRUE, main = "How gender affects the injured status", xlab = "Gender", ylab = "Injured Status")
+```
+Higher proportion of female get injured in a traffic accident than that of male, which might result from the fact that most vehicles are designed for male instead of female, thus making female more dangerous when driving a car.
