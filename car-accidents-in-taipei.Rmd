@@ -2,7 +2,7 @@
 title: "Business Analytics Project: Car Accidents in Taipei"
 author: "Nancy Lin"
 date: "2/28/2020"
-output: html_document
+output: output: rmarkdown::github_document
 ---
 
 ```{r}
